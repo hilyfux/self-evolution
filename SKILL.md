@@ -236,13 +236,11 @@ Long tasks cause context loss — the agent forgets the method and starts freest
 3. After returning from a delegated subagent (its results may have shifted focus)
 4. When the agent notices it is acting without the target/goal/validation frame
 
-**Visible state checkpoint** — emit at the start of every new iteration cycle. This line is user-facing: it confirms the task is still running under the boost method and shows where it stands.
+**Visible state checkpoint** — at the start of each new iteration, output a brief one-line status so the user can see the task is still running under the boost method. Keep it short:
 
-```text
-[boost] Iter N | Target: <X> | Last: <keep/rollback/switch — what changed> | Next: <hypothesis> | Guardrails: <ok / ⚠ flag>
-```
+`[boost] Iter N — 上轮：<结果> → 本轮：<目标>`
 
-One line. Serves as both a user-visible signal and a reload anchor for the next cycle.
+Exact wording is flexible. The goal is user perceptibility, not a full status report.
 
 **Drift signals** — if any of these appear, pause and reload before continuing:
 - Target fuzzes or broadens without explicit re-charter
