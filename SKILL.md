@@ -1,6 +1,13 @@
 ---
 name: boost
 description: Use when the user asks to optimize, improve, iterate, diagnose, evolve, monitor, stabilize, raise quality, reduce cost, reduce failure, raise conversion, or help an object get better over time. Triggers on software systems, workflows, prompts, skills, team processes, product surfaces, services, datasets, content pipelines, agents, support flows, or any observable artifact with a goal. Also triggers in Chinese on 优化、持续进化、监控问题、提出优化方案、定义验证指标、验证效果、迭代改进、提升质量、降低成本、减少失败、提高稳定性、提高转化. Structures an observe-diagnose-optimize-validate-iterate loop with explicit target, goal, validation, mutable-surface, and execution confirmation gates. The target can be this skill itself only when the user explicitly names it.
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[boost] 文件已修改。Step 6 (Validate) 必须立即执行：读取变更文件，对比前后，展示证据。不验证不能继续。\"}}'"
+          timeout: 5
 ---
 
 # Boost
@@ -52,7 +59,7 @@ Do not proceed until the goal is actionable.
 
 ## Step 3: Observe
 
-Read the actual artifact using tools. Do not guess from memory. Capture the current state as baseline before any change.
+Read the actual artifact using tools. Do not guess from memory. Capture the current state as baseline before any change. For read-heavy targets, delegate to the `boost-observer` subagent to keep the main context clean.
 
 Output:
 
@@ -84,7 +91,7 @@ Output:
 
 ## Step 6: Validate
 
-Run a concrete check. Read the changed file, run tests, diff before/after, or produce output and inspect it. "I believe it improved" is not validation — show evidence.
+A PostToolUse hook automatically reminds you after every edit — do not ignore it. Run a concrete check: read the changed file, run tests, diff before/after, or produce output and inspect it. "I believe it improved" is not validation — show evidence.
 
 Output:
 

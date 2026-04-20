@@ -16,8 +16,9 @@ This project is the source workspace for the `boost` skill.
 
 ## Files That Matter
 
-- `SKILL.md` is the main skill logic and workflow contract.
+- `SKILL.md` is the main skill logic, workflow contract, and runtime hooks.
 - `references/` contains reusable support material and templates.
+- `agents/boost-observer.md` is the read-only observation subagent for Step 3.
 - `agents/openai.yaml` is Codex-side metadata, not the method itself.
 - `AGENTS.md` is the Codex-side project adapter; keep host-specific rules aligned across both adapter files.
 
@@ -113,6 +114,7 @@ After editing this project:
 1. Validate the workspace copy.
 2. Copy updated files into `~/.codex/skills/boost/`.
 3. Copy updated files into `~/.claude/skills/boost/`.
-4. Verify the installed copies match the workspace source.
+4. Copy `agents/boost-observer.md` into `~/.claude/agents/`.
+5. Verify the installed copies match the workspace source.
 
 Never move the project directory during installation or sync.
