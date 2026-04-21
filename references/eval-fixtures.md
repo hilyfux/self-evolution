@@ -313,7 +313,29 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - The handoff is explicit, reasoned, and does not lose the optimization structure.
 
-## Fixture 15: Parallel Sidecars Should Delegate
+## Fixture 15: Skill Before Agent Orchestration
+
+### User request
+
+`用 boost 优化这个前端功能，先帮我判断要不要走 superpowers 的流程；如果需要，再决定哪些探索工作该交给 agent。`
+
+### Must do
+
+- Recognize that the first decision is workflow selection, not delegation.
+- Invoke or recommend the matching superpowers process skill before choosing any subagent path.
+- Decide on agent use only after the governing skill path is clear.
+- Keep target resolution, contract framing, and final execution choice in the main thread.
+
+### Must not do
+
+- Do not jump straight to an agent just because exploration might happen later.
+- Do not use a subagent as a substitute for deciding whether brainstorming, debugging, TDD, or another process skill should run first.
+
+### Pass criteria
+
+- The response shows an explicit skill-first decision followed by a bounded agent decision only if still warranted.
+
+## Fixture 17: Parallel Sidecars Should Delegate
 
 ### User request
 
@@ -335,7 +357,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - The plan chooses bounded parallel delegation and keeps the main thread responsible for integration and final validation.
 
-## Fixture 16: Risky Change Should Consider Worktree Isolation
+## Fixture 18: Risky Change Should Consider Worktree Isolation
 
 ### User request
 
@@ -358,7 +380,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - The response explicitly selects isolated execution and explains how validated results return to the main workspace.
 
-## Fixture 17: Claude Adapter Should Stay Claude-Specific
+## Fixture 19: Claude Adapter Should Stay Claude-Specific
 
 ### User request
 
@@ -378,7 +400,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - Claude-specific behavior is captured in Claude adapter files without polluting the cross-host method.
 
-## Fixture 18: Codex Adapter Should Stay Codex-Specific
+## Fixture 20: Codex Adapter Should Stay Codex-Specific
 
 ### User request
 
@@ -399,7 +421,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - Codex has an explicit adapter layer and its metadata remains aligned with the shared method.
 
-## Fixture 19: Claude Adapter Should Avoid Overtrigger Language
+## Fixture 21: Claude Adapter Should Avoid Overtrigger Language
 
 ### User request
 
@@ -420,7 +442,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - The Claude adapter remains clear, but it no longer encourages overtriggering by tone alone.
 
-## Fixture 20: Codex Adapter Should Read Like Project Operating Notes
+## Fixture 22: Codex Adapter Should Read Like Project Operating Notes
 
 ### User request
 
@@ -441,7 +463,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 
 - Codex-facing instructions read like repo operating notes and support reliable execution.
 
-## Fixture 21: Visible State Checkpoint On Multi-Iteration Run
+## Fixture 23: Visible State Checkpoint On Multi-Iteration Run
 
 ### User request
 
@@ -462,7 +484,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 - Every iteration boundary in the output has a `[boost · Iter N]` line with the required state.
 - The user can read the output and confirm the task never left the boost method.
 
-## Fixture 22: Stable Contract Must Be Established
+## Fixture 24: Stable Contract Must Be Established
 
 ### User request
 
@@ -484,7 +506,7 @@ Use after a long, noisy thread where the target was already confirmed earlier.
 - A visible Stable Contract block appears before any Plan output.
 - All four fields are filled with actionable content.
 
-## Fixture 23: Align Phase Must Detect Drift
+## Fixture 25: Align Phase Must Detect Drift
 
 ### User request
 
@@ -506,7 +528,7 @@ Simulate: user initially asks to optimize response time, then mid-conversation s
 - The Align output names the drift type and takes corrective action.
 - The Stable Contract is not modified without explicit acknowledgment.
 
-## Fixture 24: Log Output Is Mandatory
+## Fixture 26: Log Output Is Mandatory
 
 ### User request
 
@@ -526,7 +548,7 @@ Simulate: user initially asks to optimize response time, then mid-conversation s
 
 - Both iteration cycles have complete, visible log blocks.
 
-## Fixture 25: AutoResearch Triggers Correctly
+## Fixture 27: AutoResearch Triggers Correctly
 
 ### User request
 
@@ -548,7 +570,7 @@ Simulate: user initially asks to optimize response time, then mid-conversation s
 - AutoResearch output block appears with trigger reason, candidates, and recommendation.
 - The subsequent Plan phase uses the AutoResearch output.
 
-## Fixture 26: AutoReceive Handles New Constraints
+## Fixture 28: AutoReceive Handles New Constraints
 
 ### User request
 

@@ -68,11 +68,19 @@ If the target has no tests, no build, and no runnable output, say so explicitly.
 
 Use subagents, worktrees, and other host capabilities when they earn their cost — see the Execution Topology table in `references/methodology.md` for trigger conditions. Default to local execution unless one of the conditions below is clearly true.
 
-**Default upgrade rules**
+**Superpowers-style orchestration order**
+
+- First decide whether a `Skill` should shape the workflow before any direct implementation or broad exploration.
+- Start with process skills when they match the task type: brainstorming before creative design, systematic-debugging before bug fixing, test-driven-development before feature or behavior changes, requesting-code-review / verification-before-completion near completion.
+- Use implementation or domain skills only after the process layer is set, and only when they materially improve execution quality for the current task.
+- Escalate to an agent or subagent only after the skill path is clear and delegation has a bounded deliverable; do not use agents as a substitute for deciding the workflow.
+- Keep the main thread responsible for target resolution, Stable Contract, execution choice, validation, and final keep/rollback/next decisions.
+
+**Agent upgrade rules**
 
 - Use a focused subagent when Step 3 evidence gathering would take more than 3 reads/searches, when the target is read-heavy enough to flood context, or when 2+ sidecar explorations can proceed independently.
 - Use the built-in `Explore` subagent for broad codebase search or log/document scanning; use narrower custom subagents only when they already match the needed deliverable.
-- Keep the main thread on the critical path: target, goal, diagnosis, execution choice, validation, and keep/rollback/next always stay local.
+- Delegate only bounded sidecar work with a concrete deliverable. Never delegate the keep/rollback decision or the choice of which skill governs the task.
 - After any subagent returns, restate target, goal, baseline, and next action before integrating its result.
 
 **Worktree upgrade rules**
