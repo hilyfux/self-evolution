@@ -106,6 +106,7 @@ Five drift types to detect:
 | Local-problem hijack | Side issue displaces main objective | Clear local state, return to Goal |
 
 Align is mandatory every cycle. "No drift detected" is a valid output but must be stated explicitly.
+If drift is detected, perform Re-anchor before the next Plan: re-read the Stable Contract, clear invalid local state, restore checks, and regenerate the minimum action.
 
 ### Act Phase
 
@@ -138,6 +139,19 @@ AutoResearch is a slow path derived from Karpathy's autoresearch pattern. It act
 4. Propose a minimum probe — the smallest experiment that distinguishes candidates, with a bounded effort comparable across candidates
 5. Return to Plan with the probe action
 
+### Suggested schema
+
+```yaml
+research_result:
+  triggered: true|false
+  reason: ""
+  options:
+    - action: ""
+      expected_gain: ""
+      risk: ""
+  recommended_probe: ""
+```
+
 ### Constraints
 
 AutoResearch does NOT:
@@ -160,12 +174,13 @@ AutoReceive is the always-on listener, grounded in cybernetic feedback theory. I
 | User corrections ("no, I meant...") | Negative feedback — correct toward user intent | Immediate (this cycle) |
 | Validation successes, confirmations | Positive feedback — reinforce current direction | This cycle's Act decision |
 | New observations from tools | Record in Runtime State | Deferred (next Plan) |
-| New requirements or constraints | Propose as Contract Candidate | Escalated (after explicit marking) |
+| New requirements or constraints | Record in Runtime State first, then propose as Contract Candidate if needed | Escalated (after explicit marking) |
 | Evidence that Done criteria are wrong | Propose as Contract Candidate | Escalated (after explicit marking) |
 
 ### Boundary protection
 
 Default: update Runtime State only. Crossing into Stable Contract requires explicit escalation via Contract Candidate.
+New requirements and new constraints should enter as feedback first; they only cross the boundary after explicit escalation.
 
 Format:
 ```
@@ -179,6 +194,64 @@ Apply only when:
 ### Signal vs. noise
 
 Not every signal warrants action. Before routing as Immediate, ask: "If I act on this and it turns out to be noise, what's the cost?" High-cost-if-wrong signals should be classified as Deferred until confirmed by a second observation.
+
+## Slow-Path Gate Protocol
+
+The gates below are slow-path upgrades around PDCAA, not a replacement for PDCAA. They are optional and evidence-triggered.
+
+### Design Gate
+
+Use this gate when the task is too ambiguous for a trustworthy first Plan.
+
+Typical triggers:
+- ambiguous scope
+- multiple subsystems or moving parts hidden inside one request
+- broad multi-file change where boundaries are still unclear
+
+What it changes:
+- escalate into spec/plan-oriented clarification before broad execution
+- tighten scope, file surface, and validation basis before returning to PDCAA
+
+What it does not change:
+- does not replace the Stable Contract
+- does not bypass Check, Align, or Log
+- does not make design docs mandatory for every run
+
+### Execution Gate
+
+Use this gate when the work is clear enough to execute, but the default local path is no longer the safest or cheapest.
+
+Typical triggers:
+- rollback-sensitive or destabilizing changes
+- competing approaches worth isolating
+- context-heavy sidecar work better handled with worktree/subagent/topology escalation
+
+What it changes:
+- upgrades execution topology: worktree, delegated exploration, or bounded sidecar execution
+- keeps the main thread responsible for contract ownership, final Check, and Act decisions
+
+What it does not change:
+- does not make worktrees or subagents mandatory by default
+- does not allow delegated agents to own keep/rollback decisions
+- does not replace AutoResearch when the path itself is unclear
+
+### Quality Gate
+
+Use this gate when the work is nearly done, but the cost of a weak finish is too high.
+
+Typical triggers:
+- before declaring complete on broad changes
+- risky or user-visible changes
+- cases where stronger verification/review is justified before completion
+
+What it changes:
+- escalates verification/review before the final `complete` decision
+- may require stronger before/after evidence, focused review, or completion checks
+
+What it does not change:
+- does not add mandatory ceremony to every cycle
+- does not lower the requirement for evidence in the normal Check phase
+- does not replace the final Act decision inside PDCAA
 
 ## Validation Protocol
 

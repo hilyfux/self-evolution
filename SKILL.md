@@ -1,6 +1,6 @@
 ---
 name: boost
-version: "1.1.0"
+version: "1.3.0"
 description: Use when the user asks to optimize, improve, iterate, diagnose, evolve, monitor, stabilize, raise quality, reduce cost, reduce failure, raise conversion, or help an object get better over time. Triggers on software systems, workflows, prompts, skills, team processes, product surfaces, services, datasets, content pipelines, agents, support flows, or any observable artifact with a goal. Also triggers in Chinese on 优化、持续进化、监控问题、提出优化方案、定义验证指标、验证效果、迭代改进、提升质量、降低成本、减少失败、提高稳定性、提高转化. Structures a strict PDCAA loop (Plan-Do-Check-Align-Act) anchored by a Stable Contract, with AutoResearch, AutoReceive, and Log as built-in enhancements. The target can be this skill itself only when the user explicitly names it.
 hooks:
   PreToolUse:
@@ -40,6 +40,7 @@ These are not suggestions. Violating any is a failure.
 6. If the user says "先不要改" / "analyze only" / "just diagnose", stop after the first Check.
 7. After each Do, decide in Act: continue / adjust / rollback / research / receive_update / complete. Do not stack unvalidated changes.
 8. Align phase is mandatory every cycle — skip detection is a failure.
+9. If Align detects drift, perform Re-anchor before the next Plan: re-read the Stable Contract, clear invalid local state, restore checks, and regenerate the minimum action.
 
 ## Stable Contract
 
@@ -83,6 +84,17 @@ runtime_state:
 ```
 
 Runtime State is updated freely during execution. The Stable Contract is not.
+
+## Default Path vs Slow Path
+
+Default mode is the lightweight PDCAA loop below. The slow path is an optional upgrade protocol, not the default behavior.
+
+Trigger a slow-path gate only when the fast path stops being cheap or trustworthy:
+- **Design Gate** — ambiguous scope, multiple subsystems, or broad multi-file changes before the first real Plan
+- **Execution Gate** — rollback-sensitive work, competing approaches, or context-heavy sidecar work that benefits from worktrees or delegated execution
+- **Quality Gate** — before declaring complete when the change is broad, risky, or user-visible enough to justify stronger verification or review
+
+These gates refine execution topology and rigor around PDCAA. They do not replace AutoResearch, AutoReceive, or Log.
 
 ## PDCAA Loop
 
@@ -201,11 +213,24 @@ Activate only when:
 3. Propose a minimum probe action — the smallest experiment that distinguishes candidates
 4. Return to Plan with the probe. AutoResearch does NOT make keep/rollback decisions or modify the Stable Contract.
 
+### Schema
+
+```yaml
+research_result:
+  triggered: true|false
+  reason: ""
+  options:
+    - action: ""
+      expected_gain: ""
+      risk: ""
+  recommended_probe: ""
+```
+
 ### Output
 
 > **AutoResearch:**
 > - Trigger: <why activated>
-> - Candidates: <approach — expected gain — risk> (per candidate)
+> - Candidates: <action — expected gain — risk> (per candidate)
 > - Probe: <minimum experiment to distinguish candidates>
 > - Recommendation: <which candidate and why>
 
@@ -237,9 +262,10 @@ feedback_event:
 |------|-----------|-------------------|--------|
 | **Immediate** | Errors, constraint violations, user corrections | Current Check/Align | This cycle |
 | **Deferred** | New observations, low-priority suggestions | Next Plan | Next cycle |
-| **Escalated** | New requirements, evidence that Done/Constraints are wrong | Contract Candidate | After explicit marking |
+| **Escalated** | New requirements, new constraints, evidence that Done/Constraints are wrong | Contract Candidate | After explicit marking |
 
 Default behavior: update Runtime State only. Do NOT modify Stable Contract directly.
+New requirements and new constraints enter the loop as feedback first; crossing into the Stable Contract requires explicit escalation.
 
 If modification to Stable Contract is warranted, mark explicitly:
 

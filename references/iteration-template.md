@@ -41,6 +41,7 @@ Use this template when running a PDCAA cycle. Each cycle produces the mandatory 
 
 ```text
 > **Align:** <drift detected: none / type + correction taken>
+> **Re-anchor:** <only if drift detected: contract reread, invalid local state cleared, checks restored, minimum action regenerated>
 ```
 
 ### 5. Act
@@ -54,8 +55,20 @@ Use this template when running a PDCAA cycle. Each cycle produces the mandatory 
 ```text
 > **AutoResearch:**
 > - Trigger: <why activated>
-> - Candidates: <approaches considered>
-> - Recommendation: <minimum probe action>
+> - Candidates: <action — expected gain — risk> (per candidate)
+> - Probe: <minimum experiment to distinguish candidates>
+> - Recommendation: <which candidate and why>
+```
+
+```yaml
+research_result:
+  triggered: true|false
+  reason: ""
+  options:
+    - action: ""
+      expected_gain: ""
+      risk: ""
+  recommended_probe: ""
 ```
 
 ## AutoReceive (when new input arrives)

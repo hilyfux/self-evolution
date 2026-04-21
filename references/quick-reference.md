@@ -29,5 +29,6 @@ round_id / goal / current_action / action_reason / execution_result / check_resu
 4. 给 AutoReceive 做统一反馈归类与路由。
 5. 把 run_log 做成结构化输出，确保每轮都可追踪。
 6. 先从最小动作和最小检查开始，不要一开始把系统做得过重。
+7. 默认走轻量 PDCAA；只有在复杂度、风险或收口压力升高时，才升级到慢路径 gate。
 
 > 建议：先按最小版跑通，再逐步补 AutoResearch 的分支比较和 AutoReceive 的反馈升级逻辑。

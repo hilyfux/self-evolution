@@ -24,6 +24,7 @@ Use these patterns:
 - Treat subagents as focused workers with narrow responsibilities, clear descriptions, and limited tools.
 - Prefer built-in or focused subagents for exploration, planning, and sidecar analysis when they preserve main-thread context.
 - Keep long-running or noisy work out of the main thread when it would dilute context quality.
+- Treat slow-path gates as optional escalation tools, not default ceremony, so simple boost runs stay lightweight.
 
 Claude-specific adapter files should therefore emphasize:
 
@@ -39,7 +40,7 @@ Codex works best when the persistent repo instructions behave like project opera
 
 Use these patterns:
 
-- Keep `AGENTS.md` practical: how to navigate, how to validate, what source of truth to follow, and how to report evidence.
+- Keep `AGENTS.md` practical: how to navigate, how to validate, what source of truth to follow, how to report evidence, and when contract-level drift requires explicit re-anchor instead of ad-hoc scope creep.
 - Keep tasks well-scoped, closer to a GitHub issue than to a vague aspiration.
 - Include concrete file paths, artifacts, and validation commands when known.
 - Prefer explicit verification expectations so Codex can return auditable evidence.
