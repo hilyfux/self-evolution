@@ -1,147 +1,305 @@
 ---
 name: boost
-description: Use when the user asks to optimize, improve, iterate, diagnose, evolve, monitor, stabilize, raise quality, reduce cost, reduce failure, raise conversion, or help an object get better over time. Triggers on software systems, workflows, prompts, skills, team processes, product surfaces, services, datasets, content pipelines, agents, support flows, or any observable artifact with a goal. Also triggers in Chinese on 优化、持续进化、监控问题、提出优化方案、定义验证指标、验证效果、迭代改进、提升质量、降低成本、减少失败、提高稳定性、提高转化. Structures an observe-diagnose-optimize-validate-iterate loop with explicit target, goal, validation, mutable-surface, and execution confirmation gates. The target can be this skill itself only when the user explicitly names it.
+version: "1.1.0"
+description: Use when the user asks to optimize, improve, iterate, diagnose, evolve, monitor, stabilize, raise quality, reduce cost, reduce failure, raise conversion, or help an object get better over time. Triggers on software systems, workflows, prompts, skills, team processes, product surfaces, services, datasets, content pipelines, agents, support flows, or any observable artifact with a goal. Also triggers in Chinese on 优化、持续进化、监控问题、提出优化方案、定义验证指标、验证效果、迭代改进、提升质量、降低成本、减少失败、提高稳定性、提高转化. Structures a strict PDCAA loop (Plan-Do-Check-Align-Act) anchored by a Stable Contract, with AutoResearch, AutoReceive, and Log as built-in enhancements. The target can be this skill itself only when the user explicitly names it.
 hooks:
   PreToolUse:
     - matcher: "Bash|Read|Grep|Glob"
       hooks:
         - type: command
-          command: "F=/tmp/boost-drift-counter; C=$(($(cat $F 2>/dev/null||echo 0)+1)); echo $C>$F; [ $C -ge 6 ] && printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[boost] 已连续 %d 次探索性调用未产生变更。暂停确认：当前在 Step 几？仍在框架内吗？Step 3 收集信息正常，但无目标的漫游需要回到步骤。\"}}' $C || true"
+          command: "python3 -c 'import pathlib,json;f=pathlib.Path(\"/tmp/boost-drift-counter\");c=int(f.read_text())+1 if f.exists() else 1;f.write_text(str(c));print(json.dumps({\"additionalContext\":\"[boost] 已连续 \"+str(c)+\" 次探索性调用。快速自检：当前在 PDCAA 哪个阶段？Stable Contract 是否仍然锚定？如果不确定，暂停并重建状态。\"})) if c>=10 else None'"
           timeout: 5
   PostToolUse:
     - matcher: "Edit|Write"
       hooks:
         - type: command
-          command: "echo 0>/tmp/boost-drift-counter; printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[boost] 文件已修改。Step 6 (Validate) 必须立即执行：读取变更文件，对比前后，展示证据。不验证不能继续。\"}}'"
+          command: "python3 -c 'import pathlib,json;pathlib.Path(\"/tmp/boost-drift-counter\").write_text(\"0\");print(json.dumps({\"additionalContext\":\"[boost] 文件已修改。继续前必须回答：(1) 当前在 PDCAA 哪个阶段？目标是什么？这次编辑属于哪个实验？(2) Check 阶段——读取变更文件，对比前后，展示证据。如果无法回答 (1)，立即 STOP 并重新打开 SKILL.md 重建状态。\"}))'"
           timeout: 5
   Stop:
     - hooks:
         - type: command
-          command: "rm -f /tmp/boost-drift-counter; printf '{\"decision\":\"approve\",\"stopReason\":\"[boost] 回合结束前检查：是否已发出迭代检查点？目标是否达成？如果未完成，说明停止原因。\"}'"
+          command: "python3 -c 'import pathlib,json;pathlib.Path(\"/tmp/boost-drift-counter\").unlink(missing_ok=True);print(json.dumps({\"decision\":\"approve\",\"reason\":\"[boost] 回合结束前检查：是否已输出完整 log_summary？Stable Contract 目标是否达成？如果未完成，说明停止原因。\"}))'"
           timeout: 5
 ---
 
 # Boost
 
-Generic optimization loop for any target with observable behavior and a goal.
+Execution-oriented optimization skill. Core methodology: **PDCAA** (Plan-Do-Check-Align-Act), anchored by a Stable Contract, enhanced by AutoResearch, AutoReceive, and Log.
+
+The goal is not to answer questions but to produce stable, effective results through disciplined iteration.
 
 ## Hard Rules
 
 These are not suggestions. Violating any is a failure.
 
-1. Follow Steps 1–7 in order. Do not skip or reorder.
-2. Each step MUST produce visible output under its step heading.
-3. Do not edit anything before Step 3 (Observe) is complete.
-4. Do not declare success without evidence from Step 6 (Validate).
+1. Establish the Stable Contract before entering the PDCAA loop. Do not skip.
+2. Each PDCAA cycle MUST produce visible output with the 11 mandatory log fields.
+3. Do not edit anything before the first Plan phase reads the Stable Contract.
+4. Do not declare success without evidence from the Check phase.
 5. The target is never this skill unless the user explicitly names it as target.
-6. If the user says "先不要改" / "analyze only" / "just diagnose", stop after Step 4.
-7. After each executed change, decide: keep / rollback / next. Do not stack unvalidated changes.
+6. If the user says "先不要改" / "analyze only" / "just diagnose", stop after the first Check.
+7. After each Do, decide in Act: continue / adjust / rollback / research / receive_update / complete. Do not stack unvalidated changes.
+8. Align phase is mandatory every cycle — skip detection is a failure.
 
-## Step 1: Target
+## Stable Contract
 
-Name the object being optimized.
+Before entering the loop, establish and confirm these four fields:
 
+| Field | Definition |
+|-------|-----------|
+| **Goal** | The single objective being pursued |
+| **Constraints** | Hard boundaries that must not be violated |
+| **Done** | Concrete definition of completion |
+| **Checks** | Mandatory verification items |
+
+Output:
+
+> **Stable Contract**
+> - Goal: <唯一目标>
+> - Constraints: <不可违反的约束>
+> - Done: <完成定义>
+> - Checks: <必检项>
+
+Rules:
 - If the user names a concrete object, that is the target.
 - If the user says "当前项目" / "this project", the target is the surrounding project, not this skill.
 - If ambiguous, ask one question to disambiguate. Only one.
+- If the goal is vague ("优化一下", "make it better"), ask 1–2 sharp questions. No more.
+- Do not proceed until all four fields are filled.
+
+## Runtime State
+
+Tracks mutable per-cycle state. Separate from the Stable Contract — never confuse the two.
+
+```yaml
+runtime_state:
+  current_step: ""
+  observations: []
+  local_issues: []
+  feedback: []
+  validation_result: {}
+  next_candidates: []
+  drift_flags: []
+```
+
+Runtime State is updated freely during execution. The Stable Contract is not.
+
+## PDCAA Loop
+
+Execute in strict order every cycle. Each phase produces visible output.
+
+### 1. Plan
+
+- Read Goal / Constraints / Done / Checks from the Stable Contract
+- Define the current minimum action
+- The action must: directly serve the goal, be low-risk, be verifiable
 
 Output:
 
-> **Confirmed Target:** <the object you will optimize>
+> **Plan:** <当前最小动作及其理由>
 
-Do not proceed until the target is named.
+### 2. Do
 
-## Step 2: Goal
-
-State what success means in concrete terms.
-
-If the user's intent is vague ("优化一下", "make it better"), ask 1–2 sharp questions:
-
-- "最让你头疼的问题是什么？" / "What hurts most?"
-- "如果只改一件事，你最希望看到什么变化？" / "If you could fix one thing, what would it be?"
-
-Do not ask more than 2 questions. Do not ask about how to validate or what metrics to track — figure those out yourself.
+- Execute the current minimum action
+- Record: execution result, new observations, new questions
 
 Output:
 
-> **Confirmed Goal:** <what success looks like>
+> **Do:** <执行了什么，结果是什么>
 
-Do not proceed until the goal is actionable.
+### 3. Check
 
-## Step 3: Observe
+Answer all five questions:
 
-Read the actual artifact using tools. Do not guess from memory. Capture the current state as baseline before any change. For read-heavy targets, delegate to the `boost-observer` subagent to keep the main context clean.
+1. Did this action advance the goal?
+2. Did it violate any constraint?
+3. Did it introduce new problems?
+4. Is the result verifiable with evidence?
+5. Does it preserve the ability to check in subsequent cycles?
 
-Output:
-
-> **Baseline:** <specific observations about current state>
-
-Do not propose or execute changes until this step is complete.
-
-## Step 4: Diagnose
-
-Build a problem model: Symptom → Impact → Cause → Confidence → Evidence.
-
-Pick the single highest-leverage intervention. Do not present a menu of equal options — choose one and justify it.
+Run a concrete verification: read the changed file, run tests, diff before/after, or produce output and inspect. "I believe it improved" is not validation — show evidence.
 
 Output:
 
-> **Diagnosis:** <the problem, with evidence>
->
-> **Intervention:** <one specific change and why>
+> **Check:**
+> - Goal advancement: yes/no — <evidence>
+> - Constraint violation: none / <which one>
+> - New problems: none / <what>
+> - Verifiable: yes/no — <how verified>
+> - Future checkability: preserved / degraded — <note>
 
-## Step 5: Execute
+### 4. Align
 
-Apply the change. State exactly what you changed and where.
+Detect drift across five dimensions:
 
-If the user requested analysis only, stop here and output the plan without executing.
+| Drift Type | Signal |
+|-----------|--------|
+| Goal drift | Target fuzzes or broadens without re-charter |
+| Constraint drift | Constraints silently relaxed or ignored |
+| Check drift | Verification items skipped or weakened |
+| Done-criteria drift | Completion bar moves without explicit agreement |
+| Local-problem hijack | A side issue displaces the main objective |
+
+If any drift is detected:
+
+1. Re-read the Stable Contract
+2. Clear invalid local state
+3. Restore check items
+4. Regenerate the current minimum action
 
 Output:
 
-> **Executed:** <what was changed, on what scope>
+> **Align:** <drift detected: none / type + correction taken>
 
-## Step 6: Validate
+### 5. Act
 
-A PostToolUse hook automatically reminds you after every edit — do not ignore it. Run a concrete check: read the changed file, run tests, diff before/after, or produce output and inspect it. "I believe it improved" is not validation — show evidence.
+Based on Check and Align results, choose exactly one:
+
+| Decision | When |
+|----------|------|
+| `continue` | Goal advancing, no drift, next step clear |
+| `adjust` | Right direction but approach needs refinement |
+| `rollback` | Violated constraint, introduced regression, or no gain |
+| `research` | Path unclear, trigger AutoResearch |
+| `receive_update` | New external input requires integration |
+| `complete` | Done criteria met with evidence |
 
 Output:
 
-> **Checked:** <what you verified and how>
->
-> **Before → After:** <concrete comparison>
->
-> **Decision:** keep / rollback / next — with evidence
+> **Act:** <decision> — <reason>
 
-## Step 7: Next
+If not `complete`, emit the iteration checkpoint and loop back to Plan:
 
-If the goal is met, state why and stop.
+> **[boost · Iter N]** Target: <target> | Goal: <goal> | 上轮: <result> → 本轮: <next focus>
 
-If not, emit the visible state checkpoint and loop back to Step 3:
+## AutoResearch
 
-> **[boost · Iter N]** 上轮：<result> → 本轮：<next target>
+On-demand exploration, not a standing committee. Distilled from Karpathy's `autoresearch` pattern: an autonomous loop where the agent owns hypothesis formation, experiment execution, and result evaluation — advancing only on evidence, never on intuition.
 
-### Stop when
+### Core principles (from autoresearch)
 
-- The goal is met
-- The user asks to pause
+1. **Separated concerns** — every research loop needs three clearly separated roles: a charter (Stable Contract), a mutable surface (the thing you change), and a locked evaluator (the thing that judges the change). When the same loop can freely change both artifact and evaluator, all comparisons become meaningless.
+2. **Ratchet property** — the working state always represents the current best. Improvements are committed; failures are reverted. No half-tested changes accumulate. Single lineage, not population diversity.
+3. **Fixed comparison budget** — each probe gets a bounded effort. This makes results comparable across experiments rather than biased by how long each one ran. Not "try A for an hour, B for five minutes" but "each gets the same budget."
+4. **Simplicity criterion** — a tiny improvement that adds significant complexity is rejected. Complexity degrades across sessions; guard against it explicitly.
+5. **Crash resilience** — failed experiments are logged, reverted, and skipped. Do not debug endlessly — log the failure, revert, try the next hypothesis.
+6. **Autonomous continuity** — once the charter is set, the agent drives the full loop without pausing for permission. The human's role is research advisor, not operator.
+
+### Trigger conditions
+
+Activate only when:
+- Path is unclear — cannot define a verifiable minimum action
+- Multiple conflicting approaches — 2+ viable paths with unclear tradeoffs
+- Consecutive low-gain cycles (2+) — the fast path is exhausted
+- Results contradict expectations — evidence invalidates the working model
+- Actions repeatedly rejected — the current direction is blocked
+
+### Process
+
+1. List candidate approaches (max 3)
+2. Compare each against Stable Contract — which best serves Goal within Constraints?
+3. Propose a minimum probe action — the smallest experiment that distinguishes candidates
+4. Return to Plan with the probe. AutoResearch does NOT make keep/rollback decisions or modify the Stable Contract.
+
+### Output
+
+> **AutoResearch:**
+> - Trigger: <why activated>
+> - Candidates: <approach — expected gain — risk> (per candidate)
+> - Probe: <minimum experiment to distinguish candidates>
+> - Recommendation: <which candidate and why>
+
+## AutoReceive
+
+The always-on listener. Grounded in cybernetic feedback theory (Wiener): a control system that classifies incoming signals, routes them by impact, and protects the stable boundary from uncontrolled mutation.
+
+### Core principles (from cybernetics)
+
+1. **Negative feedback (stabilizing)** — when the system deviates from the Stable Contract (goal drift, constraint violation), corrective signals pull it back. This is the primary function: detect deviation, trigger correction. The Stable Contract is the homeostatic setpoint.
+2. **Positive feedback (amplifying)** — when evidence confirms the current direction (Check passes, metrics improve), the signal reinforces. Not all feedback is corrective; confirmations matter too.
+3. **Wiener filter (signal vs. noise)** — not every incoming signal warrants action. Separate actionable feedback from noise. "Interesting but unclear" is a valid classification — record it, don't act on it.
+4. **Requisite variety (Ashby)** — the classification system must match the complexity of disturbances it faces. If all feedback is bucketed as "high/low", nuanced signals get misrouted. The schema below provides enough variety for typical optimization loops.
+5. **Reflexivity (von Foerster)** — the system's own Check results, Align drift signals, and Log patterns are valid feedback. A pattern of consecutive `adjust` decisions is itself a signal. The system must observe its own observation process.
+
+### Classification
+
+```yaml
+feedback_event:
+  type: new_requirement | new_constraint | execution_error | tool_feedback | validation_feedback | new_observation | env_change
+  priority: low | medium | high
+  source: user | system | self
+  payload: ""
+```
+
+### Routing
+
+| Tier | Signal type | Integration point | Timing |
+|------|-----------|-------------------|--------|
+| **Immediate** | Errors, constraint violations, user corrections | Current Check/Align | This cycle |
+| **Deferred** | New observations, low-priority suggestions | Next Plan | Next cycle |
+| **Escalated** | New requirements, evidence that Done/Constraints are wrong | Contract Candidate | After explicit marking |
+
+Default behavior: update Runtime State only. Do NOT modify Stable Contract directly.
+
+If modification to Stable Contract is warranted, mark explicitly:
+
+> **Contract Candidate:** <proposed change to which field> — <evidence/reason>
+
+Apply only after user confirms or evidence is overwhelming.
+
+## Log
+
+Every PDCAA cycle MUST record:
+
+```text
+round_id:         <cycle number, e.g. 1, 2, 3>
+goal:             <current goal summary>
+current_action:   <what was done>
+action_reason:    <why this action>
+execution_result: <what happened>
+check_result:     <verification outcome>
+align_result:     <drift signal or none>
+feedback:         <any received input>
+decision:         <continue/adjust/rollback/research/receive_update/complete>
+next_step:        <what happens next>
+log_summary:      <one-line digest of this cycle>
+```
+
+This log is the mandatory cycle output. It appears in the visible response, not hidden.
+
+## Execution Topology
+
+Use the lightest topology that fits. Trigger heavier ones by condition, not by habit.
+
+| Condition | Topology | Why |
+|-----------|----------|-----|
+| Single-scope edit, next step obvious | `local` | No overhead |
+| 2+ independent exploration directions | `delegated` (parallel subagents) | Explore in parallel, converge in main thread |
+| Read-heavy evidence gathering | `delegated` (Explore subagent) | Preserve main-thread context quality |
+| Risky/broad change, needs cheap rollback | `isolated-worktree` | Main workspace stays clean |
+| Comparing two competing approaches | `delegated` + `isolated-worktree` | Compare without pollution |
+
+## Stop When
+
+- Done criteria met (with evidence)
+- User asks to pause
 - Further change would cause more harm than benefit
-- You need information only the user can provide
+- Information needed that only the user can provide
 
-State exactly why you are stopping.
-
-## When to Use
-
-Use when the user wants to improve, optimize, diagnose, or iterate on something and no more specialized skill covers the target.
-
-Do not use for explanation-only, brainstorming-only, or clerical tasks.
+State exactly why you are stopping. Do not use for explanation-only, brainstorming-only, or clerical tasks.
 
 ## References
 
-Consult these for deeper methodology when a step needs more context:
+Consult these for deeper methodology when a phase needs more context:
 
 - [references/methodology.md](references/methodology.md) — full methodology: research frames, topology, autonomous iteration, validation protocol, ratchet/rollback patterns
-- [references/iteration-template.md](references/iteration-template.md) — structured template for one pass
+- [references/iteration-template.md](references/iteration-template.md) — structured template for one PDCAA cycle
 - [references/iteration-state-snapshot.md](references/iteration-state-snapshot.md) — compact state for long threads
 - [references/eval-fixtures.md](references/eval-fixtures.md) — regression checks for skill behavior
 - [references/evolution-metrics.md](references/evolution-metrics.md) — metric and evaluation patterns
 - [references/skill-best-practices.md](references/skill-best-practices.md) — skill design and host adaptation guidance
+- [references/quick-reference.md](references/quick-reference.md) — minimal system prompt and quick start checklist
+- [references/claude-clarification-prompts.md](references/claude-clarification-prompts.md) — reusable question patterns and few-shot examples for target/goal discovery
+- [references/host-adaptation-best-practices.md](references/host-adaptation-best-practices.md) — Claude Code and Codex host adaptation guidance
+- [references/research-loop-notes.md](references/research-loop-notes.md) — Karpathy's autoresearch: three-file architecture, ratchet, fixed budget, simplicity criterion
+- [references/feedback-loop-notes.md](references/feedback-loop-notes.md) — cybernetic feedback theory: Wiener, Ashby, von Foerster applied to AutoReceive

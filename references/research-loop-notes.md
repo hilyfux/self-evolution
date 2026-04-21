@@ -1,101 +1,95 @@
 # Research Loop Notes
 
-Use this reference when the compact `SKILL.md` is not enough and the agent needs the fuller research-loop rationale.
+Use this reference when the compact AutoResearch section in `SKILL.md` is not enough and the agent needs the fuller rationale.
 
-## Universal Principles from Autoresearch
+## Source: Karpathy's autoresearch
 
-Karpathy's `autoresearch` demonstrated a tight autonomous research loop on ML training. The patterns below are the domain-agnostic principles extracted from that work, adapted for any optimization target.
+Released March 2026. An autonomous ML research loop: an AI agent modifies a training script, runs a 5-minute experiment, evaluates results against a fixed metric, keeps improvements or reverts failures, and loops indefinitely. 21,000+ GitHub stars. Reports of 19% performance gains from 37 overnight experiments (Shopify CEO), 11% speedup from 20 tweaks.
 
-### 1. Three-Role Governance
+The key contribution is not the ML results but the **loop architecture** — which generalizes to any optimization target with an editable artifact and a measurable signal.
 
-Every optimization loop needs three clearly separated roles:
+## The Three-File Architecture
 
-| Role | Autoresearch example | General equivalent |
-|------|---------------------|-------------------|
-| Charter (human-owned) | `program.md` | Confirmed target + goal + constraints |
-| Mutable surface (agent-owned) | `train.py` | The files, configs, prompts, or steps the agent can change |
-| Locked evaluator (nobody touches) | `prepare.py` + val_bpb | The benchmark, test suite, review basis, or acceptance criteria that stays fixed for this round |
+The core design decision: separate concerns into three files with strict boundaries.
 
-The key insight: when the same loop can freely change both the artifact and the thing that judges it, all comparisons become meaningless. Lock the evaluator.
+| File | Role | Mutable? | Our equivalent |
+|------|------|----------|---------------|
+| `program.md` | Charter — research priorities, constraints, domain knowledge | Human-edited only | Stable Contract (Goal/Constraints/Done/Checks) |
+| `train.py` | Mutable surface — the one file the agent edits | Agent-edited | The files, prompts, configs, or steps allowed to change this round |
+| `prepare.py` | Locked evaluator — data pipeline, scoring function, constants | Never modified | The benchmark, test suite, fixture set, or acceptance criteria that stays fixed |
 
-### 2. Ratchet Property
+**Why this matters:** When the same loop can freely change both the artifact AND the thing that judges it, all comparisons become meaningless. The evaluator lock is what makes experiments comparable. In autoresearch, `evaluate_bpb` lives in read-only `prepare.py`, preventing the agent from gaming the metric by changing the tokenizer or validation split.
 
-The working state always represents the current best. Failed experiments are reverted, not accumulated.
+**For boost:** Before every research probe, explicitly name the mutable surface and the locked evaluator. If you cannot name the evaluator, you cannot tell whether the experiment worked.
 
-- In git repos: branch tip = validated best. Rollback = `git reset`.
-- In non-git targets (workflows, processes, docs): save a snapshot before each experiment. Revert to it on failure.
-- In ephemeral targets (prompts, configs): keep a "last known good" copy.
+## The Ratchet Mechanism
 
-The ratchet prevents drift: you never end up with a workspace full of half-tested changes.
+Autoresearch uses git as the ratchet:
+- Improvement (lower val_bpb) → commit the change, continue from new state
+- No improvement or regression → `git reset` to last good commit
+- Crash or error → log it, revert, try next hypothesis
 
-### 3. Persistent Experiment Ledger
+This creates **single-lineage hill-climbing**: each kept experiment becomes the parent of the next. No population diversity, no branching — deterministic parent-child progression. The working state is always the current best.
 
-Every attempt — including failures — gets noted in conversation context before moving on. The ledger prevents rediscovering dead ends. It lives in the agent's memory during the session, not in files. No tracking files, no extra artifacts.
+**For boost:** The PDCAA `continue`/`rollback` decisions in Act phase implement this ratchet. When git is available, commit before experimenting and revert on failure. The workspace should never represent a speculative state.
 
-### 4. Advance Only on Evidence
+## Fixed Comparison Budget
 
-Do not keep a change because it "looks right." Run a concrete check, compare against baseline, and only then decide. This is operationalized in the Validation Protocol in SKILL.md.
+Every autoresearch experiment gets exactly 5 minutes of wall-clock training time. This constraint:
+- Makes all experiments comparable on the same platform
+- Forces optimization of "throughput × learning effectiveness" not just raw quality
+- Enables ~12 experiments/hour, ~100 overnight
+- Prevents bias from unequal effort allocation
 
-### 5. Simplicity Criterion
+**For boost:** When comparing approaches, give each a bounded probe effort. Not "try A thoroughly then try B quickly" — each candidate gets the same scope of investigation. The bound doesn't need to be time-based; it can be scope-based (one file read, one test run, one diff).
 
-All else being equal, simpler is better. A marginal improvement that adds ugly complexity is not worth keeping. This applies across domains:
+## The Simplicity Criterion
 
-- Code: fewer lines, fewer abstractions, fewer edge cases
-- Prompts: shorter, clearer, fewer conditionals
-- Workflows: fewer steps, fewer handoffs, fewer failure modes
-- Configs: fewer parameters, fewer overrides
+From autoresearch practice: "Tiny improvements adding 50+ lines of tangled code are rejected." Complexity degrades across sessions. Each experiment must justify its complexity cost, not just its outcome gain.
 
-### 6. Crash Resilience
+**For boost:** When Act decides between `continue` and `rollback`, factor in complexity. A marginal improvement that adds ugly complexity is not worth keeping. Simpler solutions that score equally are preferred.
 
-Experiments can fail in ways beyond "didn't improve" — they can crash, error, or produce invalid output. When this happens:
+## Crash Resilience
 
-1. Log the failure (what was tried, what error occurred)
-2. Revert to the last known good state
-3. Skip ideas that are broken at the root — do not debug endlessly
-4. Try the next hypothesis
+Experiments fail in ways beyond "didn't improve" — they crash, error, or produce garbage. Autoresearch handles this:
+1. Read the last 50 lines of error output
+2. Attempt a fix, re-run up to a few times
+3. If still broken, log the failure, revert, skip to next hypothesis
+4. Do not debug endlessly — the loop's strength is throughput, not depth on any one path
 
-This prevents the loop from getting stuck on one broken path.
+**For boost:** When a Do action fails in an unexpected way, the correct response is usually: log what happened, revert, and try a different approach. Reserve deep debugging for when the failure reveals something about the system itself.
 
-### 7. Autonomous Continuity
+## Autonomous Continuity ("NEVER STOP")
 
-Once the charter is set, the agent drives the full loop without pausing for permission. The human's role shifts from operator to research advisor — they set direction through the charter and review accumulated results.
+Autoresearch instructs the agent: once the charter is set, run the loop without seeking permission. The human's role shifts from operator to research advisor — they set direction through `program.md` and review accumulated results.
 
-In our skill, this maps to: once target + goal are clear, own the method. Ask the user about goals, not about how to validate or what to try next.
+**For boost:** Once the Stable Contract is established, own the method. Do not ask the user what to try, how to validate, or when to stop. Drive Plan → Do → Check → Align → Act autonomously. The exception is: stop if the user explicitly asked for analysis only.
 
-## How These Differ from Autoresearch
+## The Experiment Ledger
 
-Our skill generalizes autoresearch in several ways:
+Autoresearch tracks every attempt in `results.tsv`: experiment number, val_bpb score, peak VRAM, keep/discard decision, timestamp. Git commit history shows the sequence of kept improvements.
 
-| Autoresearch (ML-specific) | Self-evolution (general) |
+**For boost:** The mandatory 11-field Log output IS the experiment ledger. Each cycle records what was tried, why, what happened, and what was decided. Additionally, rejected approaches should be noted so they aren't retried without new evidence.
+
+## How Boost Generalizes Autoresearch
+
+| Autoresearch (ML-specific) | Boost (general) |
 |---------------------------|------------------------|
 | Fixed target: `train.py` | Arbitrary target with resolution protocol |
-| Fixed metric: `val_bpb` | Agent-selected metrics from target's observability |
-| Fixed time budget: 5 min | No fixed budget — scope appropriate to the target |
+| Fixed metric: `val_bpb` | Agent-inferred metrics from target's observability |
+| Fixed time budget: 5 min | Scope-appropriate bounded probes |
 | Human writes `program.md` | Agent builds charter from user's goal via Socratic discovery |
-| Single-file mutable surface | Multi-file, multi-dimension surface with explicit boundaries |
+| Single-file mutable surface | Multi-file surface with explicit boundaries |
 | Local execution only | Local / delegated / isolated topology |
-| No problem modeling | Symptom → impact → cause → evidence model before acting |
 | Stateless per iteration | Context drift guard, state snapshots, session recovery |
+| No drift detection | Align phase catches goal/constraint/check drift every cycle |
 
-The core loop is the same: charter → explore → hypothesize → change → measure → keep or revert → repeat. The difference is flexibility.
+The core loop is identical: charter → hypothesize → change → measure → keep or revert → repeat. Boost adds target resolution, drift detection, multi-surface management, and topology choice.
 
-## Architecture Roles
+## Sources
 
-- `Main thread / lead researcher` — owns target resolution, charter, topology choice, final integration, validation, and keep / revise / rollback / switch.
-- `Sidecar explorers` — gather bounded evidence without owning the final decision.
-- `Sidecar workers` — implement a bounded change on a clearly named surface.
-- `Isolated branch or worktree` — acts as the experiment sandbox for risky or conflicting paths.
-- `Ledger memory` — stores baseline, experiment intent, result, and rejected ideas.
-
-Keep the primary path, final validation, and keep / revise / rollback / switch decision in the main thread.
-
-## Exit Criteria
-
-A pass is complete only when one is true:
-
-- a concrete optimization was executed and validated with evidence
-- a concrete experiment was selected with metrics, guardrails, and a next action
-- the task was deferred to a more specialized skill with the reason made explicit
-- the pass is blocked by a named missing dependency, authority, or evidence, with the unblock condition stated
-
-If the user asked for optimization rather than analysis only, the pass should also show at least one executed-and-validated iteration, or a clearly explained blocker preventing the first iteration.
+- [GitHub: karpathy/autoresearch](https://github.com/karpathy/autoresearch)
+- [DataCamp: Guide to autoresearch](https://www.datacamp.com/tutorial/guide-to-autoresearch)
+- [Kingy AI: Autoresearch minimal agent loop](https://kingy.ai/ai/autoresearch-karpathys-minimal-agent-loop-for-autonomous-llm-experimentation/)
+- [Data Science Dojo: Karpathy autoresearch explained](https://datasciencedojo.com/blog/karpathy-autoresearch-explained/)
+- [Global Advisors: Karpathy's Loop](https://globaladvisors.biz/2026/04/20/term-karpathys-loop-often-referred-to-as-autoresearch-auto-loop-or-auto-optimization/)

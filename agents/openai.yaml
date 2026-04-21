@@ -1,4 +1,4 @@
 interface:
   display_name: "Boost"
-  short_description: "Optimize a target object with a research charter, locked evaluator, and on-demand iteration paths"
-  default_prompt: "Use $boost to optimize a target object. First confirm the target, goal, mutable surface, locked evaluator, and scope. Then map observability, identify the highest-leverage problem, choose one concrete next experiment, record it in a compact ledger, and use local work, subagents, or isolated worktrees only when they clearly improve execution."
+  short_description: "Optimize a target object with a strict observe-diagnose-execute-validate loop"
+  default_prompt: "Use boost to optimize a target object. First confirm the target and goal. Then observe the current state, diagnose the highest-leverage problem, execute one concrete change, validate it with evidence, and decide keep, rollback, or next. Stay local by default, but upgrade to subagents for read-heavy or parallel sidecar work, and to isolated worktrees for broad or rollback-sensitive experiments. Keep diagnosis, validation, and the keep/rollback/next decision in the main thread."

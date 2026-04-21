@@ -1,112 +1,97 @@
 # Iteration Template
 
-Use this template when the user asks to optimize a target object and you need a compact but executable working format.
+Use this template when running a PDCAA cycle. Each cycle produces the mandatory 11-field log output.
 
-## 1. Target Brief
+## Stable Contract (establish once, before loop)
 
 ```text
-Target Object:
-Target Confirmation:
-Open Questions:
-Goal:
-Goal Confirmation:
-Mutable Surface:
-Locked Evaluator:
-Surface Confirmation:
-Scope:
-Stakeholders:
-Constraints:
-Time Horizon:
+> **Stable Contract**
+> - Goal: <唯一目标>
+> - Constraints: <不可违反的约束>
+> - Done: <完成定义>
+> - Checks: <必检项>
 ```
 
-## 2. Observability Surface
+## PDCAA Cycle
 
-Capture what can be observed before proposing changes.
+### 1. Plan
 
 ```text
-Inputs:
-Process Signals:
-Outputs:
-Side Effects:
-Human Feedback:
-System Feedback:
-Known Blind Spots:
+> **Plan:** <当前最小动作及其理由>
 ```
 
-## 3. Problem Model
-
-List only the highest-value problems first.
+### 2. Do
 
 ```text
-Symptom:
-Impact:
-Suspected Cause:
-Confidence:
-Evidence:
-Missing Evidence:
+> **Do:** <执行了什么，结果是什么>
 ```
 
-## 4. Opportunity Scorecard
-
-Use a lightweight score so prioritization is visible and repeatable.
+### 3. Check
 
 ```text
-Option:
-Expected Impact: 1-5
-Confidence: 1-5
-Implementation Cost: 1-5
-Validation Speed: 1-5
-Regression Risk: 1-5
-Learning Value: 1-5
-Decision:
+> **Check:**
+> - Goal advancement: yes/no — <evidence>
+> - Constraint violation: none / <which one>
+> - New problems: none / <what>
+> - Verifiable: yes/no — <how verified>
+> - Future checkability: preserved / degraded — <note>
 ```
 
-## 5. Experiment Card
-
-Choose one experiment unless parallel work is clearly justified.
+### 4. Align
 
 ```text
-Hypothesis:
-Change:
-Primary Metric:
-Supporting Metrics:
-Guardrails:
-Baseline:
-Validation Window:
-Stop Condition:
-Rollback Condition:
-Validation Confirmation:
-Execution Plan:
-Execution Confirmation:
+> **Align:** <drift detected: none / type + correction taken>
 ```
 
-## 6. Ledger (in context, not in files)
+### 5. Act
 
 ```text
-Attempt: | Expected: | Observed: | Decision: keep/revise/rollback/switch | Why:
+> **Act:** <decision> — <reason>
 ```
 
-## 7. Validation and Decision
-
-Before deciding, run a concrete check. State what you checked and what you found.
+## AutoResearch (when triggered)
 
 ```text
-Checked: (what was verified and how)
-Before: | After:
-Decision: Keep / Revise / Rollback / Switch
-Why:
-Next:
+> **AutoResearch:**
+> - Trigger: <why activated>
+> - Candidates: <approaches considered>
+> - Recommendation: <minimum probe action>
 ```
 
-## 8. End-of-Iteration Review
-
-Close the loop explicitly.
+## AutoReceive (when new input arrives)
 
 ```text
-What Changed:
-Observed Result:
-Confidence:
-Side Effects:
-Decision:
-Next Iteration:
+> **Contract Candidate:** <proposed change to which field> — <reason>
+```
+
+## Log (mandatory every cycle)
+
+```text
+round_id:         <cycle number, e.g. 1, 2, 3>
+goal:             <current goal summary>
+current_action:   <what was done>
+action_reason:    <why this action>
+execution_result: <what happened>
+check_result:     <verification outcome>
+align_result:     <drift signal or none>
+feedback:         <any received input>
+decision:         <continue/adjust/rollback/research/receive_update/complete>
+next_step:        <what happens next>
+log_summary:      <one-line digest of this cycle>
+```
+
+## Iteration Checkpoint (between cycles)
+
+```text
+> **[boost · Iter N]** Target: <target> | Goal: <goal> | 上轮: <result> → 本轮: <next focus>
+```
+
+## Compact Form
+
+```text
+<target>...</target>
+<goal>...</goal>
+<contract>...</contract>
+<plan>...</plan>
+<next_action>...</next_action>
 ```

@@ -1,38 +1,33 @@
 # boost
 
-`boost` is an agent skill for optimizing a target object through a disciplined research loop instead of one-shot advice.
+`boost` is an agent skill for iterative optimization using a strict PDCAA loop (Plan-Do-Check-Align-Act) anchored by a Stable Contract, instead of one-shot advice.
 
 ## Description
 
-A cross-host agent skill for iterative optimization with explicit target resolution, locked evaluators, experiment memory, and validation-driven keep / revise / rollback decisions.
+A cross-host agent skill that drives optimization through a Stable Contract (Goal/Constraints/Done/Checks) and disciplined PDCAA cycles with mandatory log output, drift detection, and evidence-based decisions.
 
 It is designed for tasks like:
 
 - improving prompts, workflows, agents, services, or repositories
 - diagnosing why a system is underperforming
-- choosing one concrete next experiment instead of listing vague options
-- iterating with validation, rollback, and experiment memory
+- choosing one concrete next intervention instead of listing vague options
+- iterating with validation and visible state checkpoints
 
-The current version is written to work across both Claude Code and Codex, with extra attention to Claude Code prompt structure and context management.
+The current version is written to work across both Claude Code and Codex, with extra attention to Claude Code execution discipline and context recovery.
 
 ## Core Idea
 
-The skill treats the thing being improved as a target object and drives it through a compact loop:
+The skill treats the thing being improved as a target object and drives it through a strict loop:
 
-1. Confirm the target.
-2. Confirm the goal.
-3. Confirm the mutable surface and locked evaluator.
-4. Map observability and form a problem model.
-5. Choose one experiment.
-6. Execute, validate, and decide `keep`, `revise`, `rollback`, or `switch`.
+1. Establish a **Stable Contract** (Goal, Constraints, Done, Checks) before any iteration.
+2. **Plan** — define the current minimum action.
+3. **Do** — execute exactly what was planned.
+4. **Check** — verify with evidence against 5 mandatory questions.
+5. **Align** — detect drift across 5 dimensions; correct if found.
+6. **Act** — decide: continue / adjust / rollback / research / complete.
+7. Emit a visible iteration checkpoint and loop back to Plan, or stop.
 
-The method borrows from Karpathy-style `autoresearch` patterns:
-
-- narrow mutable surface
-- stable evaluator
-- visible baseline
-- experiment ledger
-- evidence-based advancement
+Built-in enhancements: **AutoResearch** (triggered on path uncertainty), **AutoReceive** (handles incoming feedback), and **Log** (11-field mandatory output every cycle).
 
 ## Repository Layout
 
@@ -60,11 +55,29 @@ The method borrows from Karpathy-style `autoresearch` patterns:
 - `references/eval-fixtures.md`
   Regression fixtures for trigger behavior, clarification, iteration, and host-specific behavior.
 
+- `references/methodology.md`
+  Full methodology: research frames, topology, autonomous iteration, validation protocol, ratchet/rollback patterns.
+
 - `references/research-loop-notes.md`
-  Fuller notes on research-loop rationale, roles, and exit criteria.
+  Karpathy's autoresearch: three-file architecture, ratchet, fixed budget, simplicity criterion.
+
+- `references/feedback-loop-notes.md`
+  Cybernetic feedback theory: Wiener, Ashby, von Foerster applied to AutoReceive.
 
 - `references/skill-best-practices.md`
-  Authoring guidance for improving this skill itself.
+  Skill design, host adaptation, heuristics, and failure modes.
+
+- `references/evolution-metrics.md`
+  Metric layers, evaluation design, and evidence hierarchy.
+
+- `references/host-adaptation-best-practices.md`
+  Claude Code and Codex host adaptation guidance.
+
+- `references/quick-reference.md`
+  Minimal system prompt and quick start checklist.
+
+- `agents/boost-observer.md`
+  Read-only baseline observation subagent for Plan phase evidence gathering.
 
 ## Install
 
@@ -92,32 +105,35 @@ Codex uses both `SKILL.md` and `agents/openai.yaml`.
 
 Example requests:
 
-- `Use $boost to improve this prompt chain without increasing token cost.`
-- `用 $boost 优化这个 workflow，先确认目标和验证标准，再做一轮可执行优化。`
+- `Use boost to improve this prompt chain without increasing token cost.`
+- `用 boost 优化这个 workflow，先确认目标和目标，再做一轮可执行优化。`
 - `Treat the boost skill itself as the target object and improve its Claude Code behavior.`
 
-Typical output structure:
+Typical output structure per cycle:
 
 ```text
-Target
-Open Questions
-Goal and Constraints
-Research Charter and Surfaces
-Observability and Problem Model
-Chosen Experiment
-Execution or Plan
-Result and Next Iteration
+> **Stable Contract**
+> - Goal: ...
+> - Constraints: ...
+> - Done: ...
+> - Checks: ...
+
+> **Plan:** ...
+> **Do:** ...
+> **Check:** Goal advancement / Constraint violation / New problems / Verifiable / Future checkability
+> **Align:** drift detected: none / type + correction
+> **Act:** continue / adjust / rollback / research / complete — reason
+
+round_id / goal / current_action / action_reason / execution_result / check_result / align_result / feedback / decision / next_step / log_summary
+
+> **[boost · Iter N]** Target: ... | Goal: ... | 上轮: ... → 本轮: ...
 ```
 
-For Claude Code, a compact tagged structure is also supported:
+Boost stays local by default, but upgrades topology when it earns its cost:
 
-```text
-<target>...</target>
-<goal>...</goal>
-<surface>...</surface>
-<validation>...</validation>
-<next_action>...</next_action>
-```
+- use a focused subagent when evidence gathering would otherwise flood the main thread context
+- use an isolated worktree when the experiment is broad, rollback-sensitive, or likely to destabilize the workspace
+- keep Stable Contract, final Check, Act decision, and state snapshot in the main thread
 
 ## Development Notes
 
@@ -132,11 +148,13 @@ This repository is maintained by behavior-driven iteration rather than unit test
 
 Use these checks when changing the skill:
 
-- verify trigger quality from realistic user prompts
-- verify the target is resolved correctly
-- verify Claude Code behavior stays concise and structured
+- verify Stable Contract is established before any PDCAA cycle
+- verify target is resolved correctly (project vs. skill)
+- verify all 5 PDCAA phases execute in order with visible output
+- verify 11-field Log is emitted every cycle
+- verify Align phase detects drift when scope expands
 - verify the skill does not accidentally self-modify unless explicitly asked
-- verify experiment and rollback logic still appears in outputs
+- verify rollback path is available and exercised when evidence is negative
 
 The main regression reference is:
 
@@ -144,11 +162,13 @@ The main regression reference is:
 
 ## Git Hygiene
 
-This repository ignores backup files through `.gitignore`:
+This repository ignores backup files and Claude Code working directories through `.gitignore`:
 
 ```text
 *.bak
 *.bak.*
+.claude/
+.playwright/
 ```
 
-That keeps working backups out of commits while preserving the main skill files in version control.
+Version is tracked in `SKILL.md` frontmatter (`version` field). Git tags mark significant releases.

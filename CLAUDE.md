@@ -66,7 +66,22 @@ If the target has no tests, no build, and no runnable output, say so explicitly.
 
 ### Using Host Capabilities
 
-Use subagents, worktrees, and other host capabilities when they earn their cost — see the Execution Topology table in SKILL.md for trigger conditions. Key principles:
+Use subagents, worktrees, and other host capabilities when they earn their cost — see the Execution Topology table in `references/methodology.md` for trigger conditions. Default to local execution unless one of the conditions below is clearly true.
+
+**Default upgrade rules**
+
+- Use a focused subagent when Step 3 evidence gathering would take more than 3 reads/searches, when the target is read-heavy enough to flood context, or when 2+ sidecar explorations can proceed independently.
+- Use the built-in `Explore` subagent for broad codebase search or log/document scanning; use narrower custom subagents only when they already match the needed deliverable.
+- Keep the main thread on the critical path: target, goal, diagnosis, execution choice, validation, and keep/rollback/next always stay local.
+- After any subagent returns, restate target, goal, baseline, and next action before integrating its result.
+
+**Worktree upgrade rules**
+
+- Use a worktree when the planned experiment is broad, rollback-sensitive, or likely to destabilize the current workspace.
+- Keep the main workspace as source of truth; merge or copy back only after the isolated experiment validates.
+- Do not require a worktree for small, single-scope edits where local rollback is cheap.
+
+Key principles:
 
 - Subagents get narrow scope and a concrete deliverable. Never delegate the keep/rollback decision.
 - Worktrees are for risky experiments that could destabilize the workspace. Merge only after validation.
@@ -75,6 +90,10 @@ Use subagents, worktrees, and other host capabilities when they earn their cost 
 ### Context Preservation
 
 If you notice yourself editing without knowing which experiment the edit belongs to — STOP. Re-read `SKILL.md`, rebuild state, then continue. This is the #1 failure mode in long sessions.
+
+## Skill Hooks
+
+Hooks live in SKILL.md frontmatter and use `python3` instead of raw bash. This avoids `$` (bash variable syntax) in the YAML, which Codex's template engine misinterprets as JavaScript variable references ("Cannot access '$' before initialization"). Python commands are functionally identical and cross-platform safe.
 
 ## Claude Code Working Style
 
@@ -106,6 +125,24 @@ When invoking this skill in Claude Code, prefer this compact structure over long
 ```
 
 If the request is ambiguous, ask at most the minimum next question needed to fill one of those fields.
+
+## Versioning Rule
+
+Version lives in `SKILL.md` frontmatter `version` field — single source of truth.
+
+Format: `major.minor.patch`
+
+| Level | When to bump | Examples |
+|-------|-------------|----------|
+| **major** | Stable Contract schema 变更、PDCAA 循环结构变更、Log 字段不兼容变更 | 删除 Align 阶段、重命名 Stable Contract 字段 |
+| **minor** | 新增能力、新 reference 文件、新漂移类型、新 AutoResearch 触发条件 | 添加 Runtime State 节、添加 feedback_event schema |
+| **patch** | 措辞修正、同步修复、eval fixture 补充、typo | 对齐 spec 字段名、修正输出格式 |
+
+Rules:
+- 每次编辑 SKILL.md 后必须评估是否需要 bump。
+- Bump 时同步更新 frontmatter `version` 字段，不需要单独的 changelog 文件 — git log 即 changelog。
+- 发布重要版本时打 git tag：`git tag v<version>`。
+- 安装副本同步时必须携带最新版本号。
 
 ## Sync Rule
 
